@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lácteos del Valle - Sistema de Planificación Operativa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#0a3651',
+                        },
+                        dairy: {
+                            cream: '#FFFDF5',
+                            gold: '#D97706',
+                            cheese: '#F59E0B',
+                            milk: '#E0F2FE'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .tab-btn.active {
+            border-bottom: 3px solid #0284c7;
+            color: #0284c7;
+            font-weight: 600;
+            background-color: #ffffff;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2 rounded-lg backdrop-blur-md">
+                    <i class="fa-solid from-blue-400 fa-cow text-2xl text-dairy-cream"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        LÁCTEOS DEL VALLE 
+                        <span class="text-xs font-medium px-2 py-0.5 rounded bg-brand-500 text-white">Planta Industrial</span>
+                    </h1>
+                    <p class="text-xs text-brand-100">Sistema Integral de Planificación de la Producción (PCP)</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center space-x-4 text-xs">
+                <span class="bg-brand-900/50 px-3 py-1.5 rounded-full border border-brand-500/30">
+                    <i class="fa-solid fa-industry text-brand-500 mr-1.5"></i> Capacidad Planta: 50,000 Kg/Mes
+                </span>
+            </div>
+        </div>
+        
+        <!-- TABS BAR -->
+        <div class="bg-slate-100 border-b border-slate-200 text-slate-600">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 overflow-x-auto">
+                <button onclick="switchTab('tab-pronosticos')" id="btn-tab-pronosticos" class="tab-btn active px-5 py-3 text-sm flex items-center gap-2 transition-all hover:text-brand-600 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-line"></i> 1. Pronósticos de Demanda
+                </button>
+                <button onclick="switchTab('tab-pap')" id="btn-tab-pap" class="tab-btn px-5 py-3 text-sm flex items-center gap-2 transition-all hover:text-brand-600 whitespace-nowrap">
+                    <i class="fa-solid fa-diagram-project"></i> 2. Plan Agregado (PAP)
+                </button>
+                <button onclick="switchTab('tab-mps')" id="btn-tab-mps" class="tab-btn px-5 py-3 text-sm flex items-center gap-2 transition-all hover:text-brand-600 whitespace-nowrap">
+                    <i class="fa-solid fa-calendar-check"></i> 3. Programa Maestro (MPS)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: PRONÓSTICOS DE DEMANDA -->
+        <!-- ========================================== -->
+        <section id="tab-pronosticos" class="tab-content space-y-6">
+            <!-- Header section -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-brand-600"></i> Análisis y Comparación de Modelos de Pronóstico
+                    </h2>
+                    <p class="text-sm text-slate-500">Evaluación del consumo histórico agregado de productos lácteos (Kg/Litros procesados por mes).</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="resetHistoricalData()" class="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Restablecer Datos
+                    </button>
+                    <button onclick="calculateForecasts()" class="px-4 py-2 text-xs bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow transition">
+                        <i class="fa-solid fa-play mr-1"></i> Calcular Pronósticos
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Data Input & Model Configuration -->
+                <div class="space-y-6 lg:col-span-1">
+                    <!-- Configuración de Modelos -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-700 text-sm border-b pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-brand-500"></i> Parámetros de los Modelos
+                        </h3>
+
+                        <!-- Promedio Móvil Simple -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <label class="text-xs font-bold text-slate-700 block">1. Promedio Móvil Simple (PMS)</label>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500">Períodos (N):</span>
+                                <input type="number" id="pms-n" value="3" min="1" max="6" class="w-20 px-2 py-1 border rounded text-xs text-center focus:ring-1 focus:ring-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Promedio Móvil Ponderado -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <label class="text-xs font-bold text-slate-700 block">2. Promedio Móvil Ponderado (PMP)</label>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs text-slate-500">Períodos (N):</span>
+                                <input type="number" id="pmp-n" value="3" min="2" max="4" onchange="generateWeightInputs()" class="w-20 px-2 py-1 border rounded text-xs text-center focus:ring-1 focus:ring-brand-500">
+                            </div>
+                            <div id="weights-container" class="space-y-1.5 pt-1">
+                                <!-- Dinámico por JS -->
+                            </div>
+                            <span id="weight-warning" class="text-[10px] text-red-500 hidden font-semibold">La suma de pesos debe ser 1.0 (100%)</span>
+                        </div>
+
+                        <!-- Suavización Exponencial -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <label class="text-xs font-bold text-slate-700 block">3. Suavización Exponencial Simple (SES)</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[11px] text-slate-500 block">Alfa (&alpha;):</span>
+                                    <input type="number" id="ses-alpha" value="0.3" step="0.05" min="0.01" max="1" class="w-full px-2 py-1 border rounded text-xs text-center">
+                                </div>
+                                <div>
+                                    <span class="text-[11px] text-slate-500 block">Pronóstico Inicial (F1):</span>
+                                    <input type="number" id="ses-f1" value="12000" class="w-full px-2 py-1 border rounded text-xs text-center">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Datos Históricos -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <h3 class="font-bold text-slate-700 text-sm">Histórico de Demanda (12 Meses)</h3>
+                            <span class="text-xs text-slate-400">Valores en Kg</span>
+                        </div>
+                        <div class="max-h-60 overflow-y-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                                    <tr>
+                                        <th class="p-2">Mes</th>
+                                        <th class="p-2">Demanda Real (Kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historical-data-table" class="divide-y divide-slate-100">
+                                    <!-- Dinámico JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico y Tabla Comparativa de Resultados -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Gráfico -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-slate-700 text-sm mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-area text-brand-500"></i> Comparativa Visual: Demanda Real vs. Pronósticos
+                        </h3>
+                        <div class="h-72 w-full">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Métricas de Error y Comparación -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-700 text-sm border-b pb-2 flex items-center justify-between">
+                            <span>Tabla Resumen y Precisión de Modelos</span>
+                            <span id="best-model-badge" class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">Cargando...</span>
+                        </h3>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-center border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700">
+                                        <th class="p-2 text-left">Modelo</th>
+                                        <th class="p-2 bg-brand-50 text-brand-700">Pronóstico Mes 13</th>
+                                        <th class="p-2">MAD (Desv. Absoluta)</th>
+                                        <th class="p-2">MSE (Error Cuadrático)</th>
+                                        <th class="p-2">MAPE (Error % Absoluto)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="forecast-metrics-body" class="divide-y divide-slate-100">
+                                    <!-- Dinámico JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Detalles por período -->
+                        <div class="pt-2">
+                            <details class="text-xs text-slate-600">
+                                <summary class="cursor-pointer font-semibold text-brand-600 hover:underline">Ver desglose de pronósticos mensuales</summary>
+                                <div class="mt-3 overflow-x-auto max-h-48 overflow-y-auto">
+                                    <table class="w-full text-center border text-[11px]">
+                                        <thead class="bg-slate-50 sticky top-0">
+                                            <tr>
+                                                <th class="p-1.5 border">Mes</th>
+                                                <th class="p-1.5 border">Real</th>
+                                                <th class="p-1.5 border">PMS</th>
+                                                <th class="p-1.5 border">PMP</th>
+                                                <th class="p-1.5 border">SES</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="forecast-breakdown-body">
+                                            <!-- Dinámico JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PLAN AGREGADO DE PRODUCCIÓN (PAP) -->
+        <!-- ========================================== -->
+        <section id="tab-pap" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-packing text-brand-600"></i> Plan Agregado de Producción (6 Meses)
+                    </h2>
+                    <p class="text-sm text-slate-500">Evaluación de estrategias de persecución, nivelación, horas extras y subcontratación para Lácteos del Valle.</p>
+                </div>
+                <button onclick="calculatePAP()" class="px-4 py-2 text-xs bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow transition self-start md:self-auto">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Recalcular Planes
+                </button>
+            </div>
+
+            <!-- Parámetros de Entrada -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-700 text-sm border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-gears text-brand-500"></i> Parámetros Operativos y Económicos
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                    <!-- Parámetros Productivos -->
+                    <div class="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <span class="font-bold text-brand-700 block border-b pb-1">Productividad y Capacidad</span>
+                        <div>
+                            <label class="block text-slate-600">Hrs de trabajo por operario/día:</label>
+                            <input type="number" id="pap-hrs-dia" value="8" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Horas necesarias por Kg de lácteo:</label>
+                            <input type="number" id="pap-hrs-unidad" value="0.05" step="0.01" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Trabajadores iniciales:</label>
+                            <input type="number" id="pap-operarios-init" value="8" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                    </div>
+
+                    <!-- Costos Laborales -->
+                    <div class="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <span class="font-bold text-brand-700 block border-b pb-1">Costos de Mano de Obra ($)</span>
+                        <div>
+                            <label class="block text-slate-600">Costo Mano de Obra Regular ($/hora):</label>
+                            <input type="number" id="pap-costo-mo" value="6.00" step="0.5" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Hora Extra ($/hora):</label>
+                            <input type="number" id="pap-costo-he" value="9.00" step="0.5" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Contratar Operario ($/trabajador):</label>
+                            <input type="number" id="pap-costo-contratar" value="300" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Despedir Operario ($/trabajador):</label>
+                            <input type="number" id="pap-costo-despedir" value="500" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                    </div>
+
+                    <!-- Costos Inventario y Subcontratación -->
+                    <div class="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <span class="font-bold text-brand-700 block border-b pb-1">Inventario y Terceros ($)</span>
+                        <div>
+                            <label class="block text-slate-600">Inventario Inicial (Kg):</label>
+                            <input type="number" id="pap-inv-inicial" value="1000" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Mantenimiento Inv. ($/Kg-mes):</label>
+                            <input type="number" id="pap-costo-almacenar" value="1.50" step="0.1" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Subcontratación ($/Kg):</label>
+                            <input type="number" id="pap-costo-subcontratar" value="5.50" step="0.5" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600">Costo Escasez/Faltante ($/Kg-mes):</label>
+                            <input type="number" id="pap-costo-faltante" value="4.00" step="0.5" class="w-full p-1 border rounded mt-0.5">
+                        </div>
+                    </div>
+
+                    <!-- Control de Stock de Seguridad -->
+                    <div class="space-y-3 p-3 bg-amber-50/60 border border-amber-200 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <span class="font-bold text-amber-800 block border-b border-amber-200 pb-1">Stock de Seguridad</span>
+                            <div class="mt-2 flex items-center gap-2">
+                                <input type="checkbox" id="pap-ss-toggle" class="w-4 h-4 text-brand-600 rounded" onchange="toggleSSInput()">
+                                <label for="pap-ss-toggle" class="font-semibold text-slate-700 cursor-pointer">Activar Stock Seguridad</label>
+                            </div>
+                        </div>
+
+                        <div id="pap-ss-config" class="space-y-2 opacity-50 pointer-events-none transition-all">
+                            <div>
+                                <label class="block text-slate-600">Tipo de Stock de Seguridad:</label>
+                                <select id="pap-ss-type" class="w-full p-1 border rounded bg-white text-xs" onchange="toggleSSType()">
+                                    <option value="percent">% de Demanda Mensual</option>
+                                    <option value="fixed">Unidades Fijas (Kg)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label id="pap-ss-val-label" class="block text-slate-600">Porcentaje (%):</label>
+                                <input type="number" id="pap-ss-val" value="10" class="w-full p-1 border rounded bg-white">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-amber-700 italic">*El Stock de seguridad se suma a los requerimientos y genera costo de almacenamiento.</p>
+                    </div>
+                </div>
+
+                <!-- Tabla de Demandas y Días Laborales Mensuales -->
+                <div class="mt-4">
+                    <span class="text-xs font-bold text-slate-700 block mb-2">Demanda Agregada Pronosticada (Kg) y Días Útiles por Mes:</span>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-center border">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="p-2 border">Parámetro</th>
+                                    <th class="p-2 border">Mes 1</th>
+                                    <th class="p-2 border">Mes 2</th>
+                                    <th class="p-2 border">Mes 3</th>
+                                    <th class="p-2 border">Mes 4</th>
+                                    <th class="p-2 border">Mes 5</th>
+                                    <th class="p-2 border">Mes 6</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="p-2 border font-medium text-left bg-slate-50">Días Laborales</td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-1" value="22" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-2" value="20" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-3" value="23" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-4" value="21" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-5" value="22" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dias-6" value="21" class="w-full text-center border rounded"></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border font-medium text-left bg-slate-50">Demanda (Kg)</td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-1" value="14200" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-2" value="15500" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-3" value="13000" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-4" value="16800" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-5" value="18000" class="w-full text-center border rounded"></td>
+                                    <td class="p-1 border"><input type="number" id="pap-dem-6" value="15000" class="w-full text-center border rounded"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen Comparativo de Estrategias -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-700 text-sm border-b pb-2 flex justify-between items-center">
+                    <span>Cuadro Comparativo de Estrategias de Planificación Agregada</span>
+                    <span id="best-pap-strategy" class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">Plan Óptimo: --</span>
+                </h3>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-center border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700">
+                                <th class="p-2.5 text-left border">Estrategia</th>
+                                <th class="p-2.5 border">Costo M.O. Regular</th>
+                                <th class="p-2.5 border">Costo Contratar/Despedir</th>
+                                <th class="p-2.5 border">Costo Almacenamiento</th>
+                                <th class="p-2.5 border">Costo Escasez / H.E. / Subc.</th>
+                                <th class="p-2.5 border font-bold bg-brand-50 text-brand-800">COSTO TOTAL ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pap-comparison-body" class="divide-y divide-slate-100">
+                            <!-- Dinámico JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detalle de Tablas de cada Estrategia (Acordeón / Tabs Secundarias) -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex border-b text-xs font-semibold space-x-4">
+                    <button onclick="showPAPDetail('persecucion')" id="btn-pap-persecucion" class="pap-detail-tab pb-2 border-b-2 border-brand-600 text-brand-600">Estrategia 1: Persecución</button>
+                    <button onclick="showPAPDetail('nivelacion')" id="btn-pap-nivelacion" class="pap-detail-tab pb-2 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Estrategia 2: Nivelación Directa</button>
+                    <button onclick="showPAPDetail('he')" id="btn-pap-he" class="pap-detail-tab pb-2 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Estrategia 3: Nivelación + Horas Extras</button>
+                    <button onclick="showPAPDetail('subcontratacion')" id="btn-pap-subcontratacion" class="pap-detail-tab pb-2 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Estrategia 4: Nivelación + Subcontratación</button>
+                </div>
+
+                <div id="pap-detail-content" class="overflow-x-auto">
+                    <!-- Dinámico JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: PROGRAMA MAESTRO DE PRODUCCIÓN (MPS) -->
+        <!-- ========================================== -->
+        <section id="tab-mps" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-brand-600"></i> Plan Maestro de Producción (MPS) y Disponible para Promesa (ATP)
+                    </h2>
+                    <p class="text-sm text-slate-500">Desglose de demanda agregada por mix de productos, pedidos de clientes y lógica de producción.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="calculateMPS()" class="px-4 py-2 text-xs bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow transition">
+                        <i class="fa-solid fa-calculator mr-1"></i> Actualizar MPS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mezcla de Productos y Adición Dinámica -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Mix de Productos -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 lg:col-span-1">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-cheese text-brand-500"></i> Mix de Productos
+                        </h3>
+                        <span id="mix-total-badge" class="text-xs px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">Total: 100%</span>
+                    </div>
+
+                    <!-- Lista de Productos -->
+                    <div id="product-mix-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                        <!-- Generado por JS -->
+                    </div>
+
+                    <!-- Formulario Nuevo Producto -->
+                    <div class="border-t pt-3 space-y-2">
+                        <span class="text-xs font-bold text-slate-700 block">Agregar Nuevo Producto Lácteo</span>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-prod-name" placeholder="Ej: Queso Gouda" class="text-xs p-1.5 border rounded flex-grow">
+                            <input type="number" id="new-prod-mix" placeholder="%" min="1" max="100" class="text-xs p-1.5 border rounded w-16 text-center">
+                            <button onclick="addProduct()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-semibold transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parámetros del Período Agregado Seleccionado -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 lg:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-sm border-b pb-2 flex items-center justify-between">
+                            <span>Origen del Pronóstico Agregado para el MPS</span>
+                            <span class="text-xs font-normal text-slate-500">Seleccione mes base</span>
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 text-xs">
+                            <div>
+                                <label class="block text-slate-600 font-semibold mb-1">Demanda Agregada Total del Mes (Kg):</label>
+                                <input type="number" id="mps-base-demand" value="16000" onchange="calculateMPS()" class="w-full p-2 border rounded font-bold text-brand-700 text-sm">
+                                <p class="text-[11px] text-slate-400 mt-1">Este volumen se distribuye según la participación (%) de cada producto lácteo.</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 font-semibold mb-1">Horizonte de Planificación:</label>
+                                <select id="mps-horizon" class="w-full p-2 border rounded text-xs bg-slate-50" onchange="calculateMPS()">
+                                    <option value="4">4 Semanas (1 Mes)</option>
+                                    <option value="8">8 Semanas (2 Meses)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-brand-50 rounded-lg border border-brand-200 text-xs text-brand-800 space-y-1">
+                        <div class="font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-circle-info text-brand-600"></i> Lógica de Cálculo MPS & ATP:
+                        </div>
+                        <p class="text-[11px] leading-relaxed">
+                            • <strong>Inv. Final Proyectado</strong> = Inv. Inicial + MPS - Máx(Pronóstico, Pedidos Confirmados).<br>
+                            • <strong>MPS (Producción)</strong> = Se activa si Inv. Inicial &lt; Máx(Pronóstico, Pedidos) para cubrir el Lote Fijo/L4L.<br>
+                            • <strong>ATP (Disponible para Promesa)</strong> = (Inv. Inicial + MPS) - Suma de Pedidos hasta el siguiente lote de producción.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tablas Dinámicas MPS por Producto -->
+            <div id="mps-tables-container" class="space-y-8">
+                <!-- Se llenará dinámicamente con JavaScript por cada producto lácteo -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© 2026 Planta Industrial Lácteos del Valle - Departamento de PCP</p>
+            <p class="flex items-center gap-2">
+                <span>Optimización de Operaciones Lácteas</span> •
+                <span class="text-emerald-400"><i class="fa-solid fa-shield-halved"></i> Sistema verificado</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        // ==========================================
+        // ESTADO GLOBAL Y DATOS POR DEFECTO
+        // ==========================================
+        
+        // Datos Históricos de Lácteos del Valle (Kg por mes)
+        let historicalData = [
+            { month: 'Enero', demand: 11200 },
+            { month: 'Febrero', demand: 12500 },
+            { month: 'Marzo', demand: 11800 },
+            { month: 'Abril', demand: 13400 },
+            { month: 'Mayo', demand: 14100 },
+            { month: 'Junio', demand: 13800 },
+            { month: 'Julio', demand: 15200 },
+            { month: 'Agosto', demand: 14900 },
+            { month: 'Septiembre', demand: 16100 },
+            { month: 'Octubre', demand: 15800 },
+            { month: 'Noviembre', demand: 16900 },
+            { month: 'Diciembre', demand: 17500 }
+        ];
+
+        // Productos predeterminados para Lácteos del Valle
+        let productMix = [
+            { id: 1, name: "Manjar Blanco", share: 30, lotSize: 1000, initialInv: 800 },
+            { id: 2, name: "Queso Mantecoso", share: 30, lotSize: 1200, initialInv: 600 },
+            { id: 3, name: "Queso Tipo Suizo", share: 40, lotSize: 1500, initialInv: 1000 }
+        ];
+
+        let forecastChart = null;
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = function() {
+            renderHistoricalTable();
+            generateWeightInputs();
+            calculateForecasts();
+            calculatePAP();
+            renderProductMixList();
+            calculateMPS();
+        };
+
+        // Cambio de Pestañas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).classList.add('active');
+
+            if (tabId === 'tab-pronosticos' && forecastChart) {
+                forecastChart.resize();
+            }
+        }
+
+        // ==========================================
+        // PESTAÑA 1: PRONÓSTICOS DE DEMANDA
+        // ==========================================
+        function renderHistoricalTable() {
+            const tbody = document.getElementById('historical-data-table');
+            tbody.innerHTML = '';
+            historicalData.forEach((row, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2 font-medium text-slate-700">${row.month}</td>
+                        <td class="p-2">
+                            <input type="number" value="${row.demand}" onchange="updateDemand(${index}, this.value)" class="w-24 px-2 py-0.5 border rounded text-right focus:ring-1 focus:ring-brand-500">
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateDemand(index, val) {
+            historicalData[index].demand = parseFloat(val) || 0;
+            calculateForecasts();
+        }
+
+        function resetHistoricalData() {
+            historicalData = [
+                { month: 'Enero', demand: 11200 }, { month: 'Febrero', demand: 12500 },
+                { month: 'Marzo', demand: 11800 }, { month: 'Abril', demand: 13400 },
+                { month: 'Mayo', demand: 14100 }, { month: 'Junio', demand: 13800 },
+                { month: 'Julio', demand: 15200 }, { month: 'Agosto', demand: 14900 },
+                { month: 'Septiembre', demand: 16100 }, { month: 'Octubre', demand: 15800 },
+                { month: 'Noviembre', demand: 16900 }, { month: 'Diciembre', demand: 17500 }
+            ];
+            renderHistoricalTable();
+            calculateForecasts();
+        }
+
+        function generateWeightInputs() {
+            const n = parseInt(document.getElementById('pmp-n').value) || 3;
+            const container = document.getElementById('weights-container');
+            container.innerHTML = '';
+            
+            // Default weights uniform distribution
+            let defaultWeights = [];
+            if(n === 3) defaultWeights = [0.5, 0.3, 0.2];
+            else if(n === 2) defaultWeights = [0.6, 0.4];
+            else {
+                const val = (1 / n).toFixed(2);
+                defaultWeights = Array(n).fill(parseFloat(val));
+            }
+
+            for(let i = 0; i < n; i++) {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Peso t-${i+1} (más reciente t-1):</span>
+                        <input type="number" step="0.05" min="0" max="1" value="${defaultWeights[i] || 0.1}" class="pmp-weight-input w-16 px-1 py-0.5 border rounded text-center">
+                    </div>
+                `;
+            }
+        }
+
+        function calculateForecasts() {
+            const demands = historicalData.map(d => d.demand);
+            const numMonths = demands.length;
+
+            // 1. Promedio Móvil Simple (PMS)
+            const nPMS = parseInt(document.getElementById('pms-n').value) || 3;
+            let pmsForecasts = Array(numMonths + 1).fill(null);
+            for (let i = nPMS; i <= numMonths; i++) {
+                const slice = demands.slice(i - nPMS, i);
+                const sum = slice.reduce((a, b) => a + b, 0);
+                pmsForecasts[i] = sum / nPMS;
+            }
+
+            // 2. Promedio Móvil Ponderado (PMP)
+            const nPMP = parseInt(document.getElementById('pmp-n').value) || 3;
+            const weightInputs = document.querySelectorAll('.pmp-weight-input');
+            let weights = [];
+            weightInputs.forEach(inp => weights.push(parseFloat(inp.value) || 0));
+
+            const sumWeights = weights.reduce((a, b) => a + b, 0);
+            const warningEl = document.getElementById('weight-warning');
+            if(Math.abs(sumWeights - 1.0) > 0.02) {
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.classList.add('hidden');
+            }
+
+            let pmpForecasts = Array(numMonths + 1).fill(null);
+            for (let i = nPMP; i <= numMonths; i++) {
+                let val = 0;
+                for (let w = 0; w < nPMP; w++) {
+                    // demands[i - 1 - w] es el periodo más reciente a medida que w avanza
+                    val += demands[i - 1 - w] * weights[w];
+                }
+                pmpForecasts[i] = val;
+            }
+
+            // 3. Suavización Exponencial Simple (SES)
+            const alpha = parseFloat(document.getElementById('ses-alpha').value) || 0.3;
+            const f1 = parseFloat(document.getElementById('ses-f1').value) || demands[0];
+            let sesForecasts = Array(numMonths + 1).fill(null);
+            sesForecasts[0] = f1;
+
+            for (let i = 0; i < numMonths; i++) {
+                sesForecasts[i + 1] = sesForecasts[i] + alpha * (demands[i] - sesForecasts[i]);
+            }
+
+            // Métricas de Error (MAD, MSE, MAPE)
+            const metricsPMS = calculateErrors(demands, pmsForecasts, nPMS);
+            const metricsPMP = calculateErrors(demands, pmpForecasts, nPMP);
+            const metricsSES = calculateErrors(demands, sesForecasts, 1);
+
+            // Determinar mejor modelo según MAPE
+            const models = [
+                { name: 'Promedio Móvil Simple', metric: metricsPMS, next: pmsForecasts[numMonths] },
+                { name: 'Promedio Móvil Ponderado', metric: metricsPMP, next: pmpForecasts[numMonths] },
+                { name: 'Suavización Exponencial', metric: metricsSES, next: sesForecasts[numMonths] }
+            ];
+            models.sort((a, b) => a.metric.mape - b.metric.mape);
+
+            document.getElementById('best-model-badge').innerText = `Mejor Modelo: ${models[0].name} (MAPE: ${models[0].metric.mape.toFixed(2)}%)`;
+
+            // Renderizar Tabla Metricas
+            const metricsBody = document.getElementById('forecast-metrics-body');
+            metricsBody.innerHTML = `
+                <tr class="${models[0].name.includes('Simple') ? 'bg-emerald-50/50' : ''}">
+                    <td class="p-2 font-semibold text-left">Promedio Móvil Simple (N=${nPMS})</td>
+                    <td class="p-2 font-bold text-brand-700 bg-brand-50">${Math.round(pmsForecasts[numMonths])} Kg</td>
+                    <td class="p-2">${metricsPMS.mad.toFixed(1)}</td>
+                    <td class="p-2">${Math.round(metricsPMS.mse).toLocaleString()}</td>
+                    <td class="p-2 font-semibold ${models[0].name.includes('Simple') ? 'text-emerald-700' : ''}">${metricsPMS.mape.toFixed(2)}%</td>
+                </tr>
+                <tr class="${models[0].name.includes('Ponderado') ? 'bg-emerald-50/50' : ''}">
+                    <td class="p-2 font-semibold text-left">Promedio Móvil Ponderado (N=${nPMP})</td>
+                    <td class="p-2 font-bold text-brand-700 bg-brand-50">${Math.round(pmpForecasts[numMonths])} Kg</td>
+                    <td class="p-2">${metricsPMP.mad.toFixed(1)}</td>
+                    <td class="p-2">${Math.round(metricsPMP.mse).toLocaleString()}</td>
+                    <td class="p-2 font-semibold ${models[0].name.includes('Ponderado') ? 'text-emerald-700' : ''}">${metricsPMP.mape.toFixed(2)}%</td>
+                </tr>
+                <tr class="${models[0].name.includes('Suavización') ? 'bg-emerald-50/50' : ''}">
+                    <td class="p-2 font-semibold text-left">Suavización Exponencial (&alpha;=${alpha})</td>
+                    <td class="p-2 font-bold text-brand-700 bg-brand-50">${Math.round(sesForecasts[numMonths])} Kg</td>
+                    <td class="p-2">${metricsSES.mad.toFixed(1)}</td>
+                    <td class="p-2">${Math.round(metricsSES.mse).toLocaleString()}</td>
+                    <td class="p-2 font-semibold ${models[0].name.includes('Suavización') ? 'text-emerald-700' : ''}">${metricsSES.mape.toFixed(2)}%</td>
+                </tr>
+            `;
+
+            // Desglose Mensual
+            const breakdownBody = document.getElementById('forecast-breakdown-body');
+            breakdownBody.innerHTML = '';
+            historicalData.forEach((row, i) => {
+                breakdownBody.innerHTML += `
+                    <tr>
+                        <td class="p-1 border text-left font-medium">${row.month}</td>
+                        <td class="p-1 border font-bold">${row.demand}</td>
+                        <td class="p-1 border text-slate-600">${pmsForecasts[i] ? Math.round(pmsForecasts[i]) : '-'}</td>
+                        <td class="p-1 border text-slate-600">${pmpForecasts[i] ? Math.round(pmpForecasts[i]) : '-'}</td>
+                        <td class="p-1 border text-slate-600">${sesForecasts[i] ? Math.round(sesForecasts[i]) : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            renderForecastChart(demands, pmsForecasts, pmpForecasts, sesForecasts);
+        }
+
+        function calculateErrors(real, forecast, startIdx) {
+            let sumAbsError = 0;
+            let sumSqError = 0;
+            let sumPctError = 0;
+            let count = 0;
+
+            for (let i = startIdx; i < real.length; i++) {
+                if (forecast[i] !== null && forecast[i] !== undefined) {
+                    const err = real[i] - forecast[i];
+                    const absErr = Math.abs(err);
+                    sumAbsError += absErr;
+                    sumSqError += err * err;
+                    sumPctError += (absErr / real[i]) * 100;
+                    count++;
+                }
+            }
+
+            return {
+                mad: count > 0 ? sumAbsError / count : 0,
+                mse: count > 0 ? sumSqError / count : 0,
+                mape: count > 0 ? sumPctError / count : 0
+            };
+        }
+
+        function renderForecastChart(real, pms, pmp, ses) {
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            const labels = historicalData.map(d => d.month).concat(['Mes 13 (Pronóstico)']);
+
+            if (forecastChart) forecastChart.destroy();
+
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Demanda Real (Kg)', data: [...real, null], borderColor: '#0f172a', backgroundColor: '#0f172a', borderWidth: 3, pointRadius: 4 },
+                        { label: 'Promedio Móvil Simple', data: pms, borderColor: '#0284c7', borderDash: [4, 4], fill: false },
+                        { label: 'Promedio Móvil Ponderado', data: pmp, borderColor: '#f59e0b', borderDash: [2, 2], fill: false },
+                        { label: 'Suavización Exponencial', data: ses, borderColor: '#10b981', fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Kilogramos (Kg)' } }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // PESTAÑA 2: PLAN AGREGADO DE PRODUCCIÓN (PAP)
+        // ==========================================
+        function toggleSSInput() {
+            const enabled = document.getElementById('pap-ss-toggle').checked;
+            const container = document.getElementById('pap-ss-config');
+            if(enabled) {
+                container.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                container.classList.add('opacity-50', 'pointer-events-none');
+            }
+            calculatePAP();
+        }
+
+        function toggleSSType() {
+            const type = document.getElementById('pap-ss-type').value;
+            const label = document.getElementById('pap-ss-val-label');
+            label.innerText = type === 'percent' ? 'Porcentaje (%):' : 'Unidades Fijas (Kg):';
+            calculatePAP();
+        }
+
+        let papCalculatedResults = {};
+
+        function calculatePAP() {
+            // Entradas de parámetros
+            const hrsDia = parseFloat(document.getElementById('pap-hrs-dia').value) || 8;
+            const hrsUnidad = parseFloat(document.getElementById('pap-hrs-unidad').value) || 0.05;
+            const initOp = parseInt(document.getElementById('pap-operarios-init').value) || 8;
+
+            const cMO = parseFloat(document.getElementById('pap-costo-mo').value) || 6;
+            const cHE = parseFloat(document.getElementById('pap-costo-he').value) || 9;
+            const cHire = parseFloat(document.getElementById('pap-costo-contratar').value) || 300;
+            const cFire = parseFloat(document.getElementById('pap-costo-despedir').value) || 500;
+
+            const initInv = parseFloat(document.getElementById('pap-inv-inicial').value) || 0;
+            const cHold = parseFloat(document.getElementById('pap-costo-almacenar').value) || 1.5;
+            const cSub = parseFloat(document.getElementById('pap-costo-subcontratar').value) || 5.5;
+            const cShort = parseFloat(document.getElementById('pap-costo-faltante').value) || 4.0;
+
+            const ssActive = document.getElementById('pap-ss-toggle').checked;
+            const ssType = document.getElementById('pap-ss-type').value;
+            const ssVal = parseFloat(document.getElementById('pap-ss-val').value) || 0;
+
+            // Vectores de datos por 6 meses
+            let days = [], demands = [];
+            for (let i = 1; i <= 6; i++) {
+                days.push(parseInt(document.getElementById(`pap-dias-${i}`).value) || 20);
+                demands.push(parseFloat(document.getElementById(`pap-dem-${i}`).value) || 0);
+            }
+
+            // Calcular Stock de Seguridad por Mes
+            let ssArray = Array(6).fill(0);
+            if (ssActive) {
+                ssArray = demands.map(d => ssType === 'percent' ? d * (ssVal / 100) : ssVal);
+            }
+
+            // ----------------------------------------------------
+            // ESTRATEGIA 1: PERSECUCIÓN (Ajustar fuerza laboral)
+            // ----------------------------------------------------
+            let strat1 = { name: 'Persecución de Demanda', rows: [], totalMO: 0, totalHireFire: 0, totalHold: 0, totalOther: 0, totalCost: 0 };
+            let currentWorkers = initOp;
+            let currentInv1 = initInv;
+
+            for (let t = 0; t < 6; t++) {
+                const reqProd = demands[t] + ssArray[t] - currentInv1;
+                const hrsReq = reqProd * hrsUnidad;
+                const hrsAvailPerWorker = days[t] * hrsDia;
+                const reqWorkers = Math.ceil(hrsReq / hrsAvailPerWorker);
+
+                let hired = 0, fired = 0;
+                if (reqWorkers > currentWorkers) hired = reqWorkers - currentWorkers;
+                else if (reqWorkers < currentWorkers) fired = currentWorkers - reqWorkers;
+
+                currentWorkers = reqWorkers;
+                const prodActual = (reqWorkers * hrsAvailPerWorker) / hrsUnidad;
+                const finalInv = currentInv1 + prodActual - demands[t];
+
+                const costMO = reqWorkers * hrsAvailPerWorker * cMO;
+                const costHF = (hired * cHire) + (fired * cFire);
+                const costHold = Math.max(0, finalInv) * cHold;
+
+                strat1.totalMO += costMO;
+                strat1.totalHireFire += costHF;
+                strat1.totalHold += costHold;
+
+                strat1.rows.push({
+                    mes: t + 1, demand: demands[t], ss: ssArray[t], days: days[t], workers: reqWorkers,
+                    hired, fired, prod: Math.round(prodActual), finalInv: Math.round(finalInv),
+                    costMO, costHF, costHold, costOther: 0, total: costMO + costHF + costHold
+                });
+
+                currentInv1 = finalInv;
+            }
+            strat1.totalCost = strat1.totalMO + strat1.totalHireFire + strat1.totalHold;
+
+            // ----------------------------------------------------
+            // ESTRATEGIA 2: NIVELACIÓN DIRECTA (Fuerza constante)
+            // ----------------------------------------------------
+            let strat2 = { name: 'Nivelación Directa', rows: [], totalMO: 0, totalHireFire: 0, totalHold: 0, totalOther: 0, totalCost: 0 };
+            const totalDem = demands.reduce((a, b) => a + b, 0) + ssArray.reduce((a, b) => a + b, 0) - initInv;
+            const totalDays = days.reduce((a, b) => a + b, 0);
+            const avgDailyDem = totalDem / totalDays;
+            const constantWorkers = Math.round((avgDailyDem * hrsUnidad) / hrsDia);
+
+            let hireInit2 = Math.max(0, constantWorkers - initOp);
+            let fireInit2 = Math.max(0, initOp - constantWorkers);
+            strat2.totalHireFire = (hireInit2 * cHire) + (fireInit2 * cFire);
+
+            let currentInv2 = initInv;
+            for (let t = 0; t < 6; t++) {
+                const prodActual = (constantWorkers * days[t] * hrsDia) / hrsUnidad;
+                const finalInv = currentInv2 + prodActual - demands[t];
+                
+                const costMO = constantWorkers * days[t] * hrsDia * cMO;
+                const costHold = finalInv > 0 ? finalInv * cHold : 0;
+                const costShort = finalInv < 0 ? Math.abs(finalInv) * cShort : 0;
+
+                strat2.totalMO += costMO;
+                strat2.totalHold += costHold;
+                strat2.totalOther += costShort;
+
+                strat2.rows.push({
+                    mes: t + 1, demand: demands[t], ss: ssArray[t], days: days[t], workers: constantWorkers,
+                    hired: t === 0 ? hireInit2 : 0, fired: t === 0 ? fireInit2 : 0, prod: Math.round(prodActual),
+                    finalInv: Math.round(finalInv), costMO, costHF: t === 0 ? strat2.totalHireFire : 0,
+                    costHold, costOther: costShort, total: costMO + (t === 0 ? strat2.totalHireFire : 0) + costHold + costShort
+                });
+
+                currentInv2 = finalInv;
+            }
+            strat2.totalCost = strat2.totalMO + strat2.totalHireFire + strat2.totalHold + strat2.totalOther;
+
+            // ----------------------------------------------------
+            // ESTRATEGIA 3: NIVELACIÓN + HORAS EXTRAS
+            // ----------------------------------------------------
+            let strat3 = { name: 'Nivelación + Horas Extras', rows: [], totalMO: 0, totalHireFire: 0, totalHold: 0, totalOther: 0, totalCost: 0 };
+            const minWorkers3 = Math.floor((Math.min(...demands) * hrsUnidad) / (20 * hrsDia)); // Base ajustada
+            let hireInit3 = Math.max(0, minWorkers3 - initOp);
+            let fireInit3 = Math.max(0, initOp - minWorkers3);
+            strat3.totalHireFire = (hireInit3 * cHire) + (fireInit3 * cFire);
+
+            let currentInv3 = initInv;
+            for (let t = 0; t < 6; t++) {
+                const regularProd = (minWorkers3 * days[t] * hrsDia) / hrsUnidad;
+                const reqProd = demands[t] + ssArray[t] - currentInv3;
+                let extraProd = 0;
+                let hrsExtrasNeeded = 0;
+
+                if (reqProd > regularProd) {
+                    extraProd = reqProd - regularProd;
+                    hrsExtrasNeeded = extraProd * hrsUnidad;
+                }
+
+                const finalInv = currentInv3 + regularProd + extraProd - demands[t];
+                const costMO = minWorkers3 * days[t] * hrsDia * cMO;
+                const costHE = hrsExtrasNeeded * cHE;
+                const costHold = Math.max(0, finalInv) * cHold;
+
+                strat3.totalMO += costMO;
+                strat3.totalOther += costHE;
+                strat3.totalHold += costHold;
+
+                strat3.rows.push({
+                    mes: t + 1, demand: demands[t], ss: ssArray[t], days: days[t], workers: minWorkers3,
+                    hired: t === 0 ? hireInit3 : 0, fired: t === 0 ? fireInit3 : 0, prod: Math.round(regularProd + extraProd),
+                    finalInv: Math.round(finalInv), costMO, costHF: t === 0 ? strat3.totalHireFire : 0,
+                    costHold, costOther: costHE, total: costMO + (t === 0 ? strat3.totalHireFire : 0) + costHold + costHE
+                });
+
+                currentInv3 = finalInv;
+            }
+            strat3.totalCost = strat3.totalMO + strat3.totalHireFire + strat3.totalHold + strat3.totalOther;
+
+            // ----------------------------------------------------
+            // ESTRATEGIA 4: NIVELACIÓN + SUBCONTRATACIÓN
+            // ----------------------------------------------------
+            let strat4 = { name: 'Nivelación + Subcontratación', rows: [], totalMO: 0, totalHireFire: 0, totalHold: 0, totalOther: 0, totalCost: 0 };
+            const minWorkers4 = minWorkers3; // Base mínima de operarios
+            let hireInit4 = Math.max(0, minWorkers4 - initOp);
+            let fireInit4 = Math.max(0, initOp - minWorkers4);
+            strat4.totalHireFire = (hireInit4 * cHire) + (fireInit4 * cFire);
+
+            let currentInv4 = initInv;
+            for (let t = 0; t < 6; t++) {
+                const regularProd = (minWorkers4 * days[t] * hrsDia) / hrsUnidad;
+                const reqProd = demands[t] + ssArray[t] - currentInv4;
+                let subUnits = 0;
+
+                if (reqProd > regularProd) {
+                    subUnits = reqProd - regularProd;
+                }
+
+                const finalInv = currentInv4 + regularProd + subUnits - demands[t];
+                const costMO = minWorkers4 * days[t] * hrsDia * cMO;
+                const costSub = subUnits * cSub;
+                const costHold = Math.max(0, finalInv) * cHold;
+
+                strat4.totalMO += costMO;
+                strat4.totalOther += costSub;
+                strat4.totalHold += costHold;
+
+                strat4.rows.push({
+                    mes: t + 1, demand: demands[t], ss: ssArray[t], days: days[t], workers: minWorkers4,
+                    hired: t === 0 ? hireInit4 : 0, fired: t === 0 ? fireInit4 : 0, prod: Math.round(regularProd + subUnits),
+                    finalInv: Math.round(finalInv), costMO, costHF: t === 0 ? strat4.totalHireFire : 0,
+                    costHold, costOther: costSub, total: costMO + (t === 0 ? strat4.totalHireFire : 0) + costHold + costSub
+                });
+
+                currentInv4 = finalInv;
+            }
+            strat4.totalCost = strat4.totalMO + strat4.totalHireFire + strat4.totalHold + strat4.totalOther;
+
+            // Guardar para renderizado de detalles
+            papCalculatedResults = { persecucion: strat1, nivelacion: strat2, he: strat3, subcontratacion: strat4 };
+
+            // Determinar Estrategia de Menor Costo
+            const allStrats = [strat1, strat2, strat3, strat4];
+            allStrats.sort((a, b) => a.totalCost - b.totalCost);
+
+            document.getElementById('best-pap-strategy').innerText = `Plan Óptimo: ${allStrats[0].name} ($${Math.round(allStrats[0].totalCost).toLocaleString()})`;
+
+            // Renderizar Cuadro Comparativo
+            const compBody = document.getElementById('pap-comparison-body');
+            compBody.innerHTML = '';
+            [strat1, strat2, strat3, strat4].forEach(s => {
+                const isBest = s.name === allStrats[0].name;
+                compBody.innerHTML += `
+                    <tr class="${isBest ? 'bg-emerald-50 font-medium' : ''}">
+                        <td class="p-2 text-left border font-semibold ${isBest ? 'text-emerald-800' : ''}">${s.name} ${isBest ? '🏆' : ''}</td>
+                        <td class="p-2 border">$${Math.round(s.totalMO).toLocaleString()}</td>
+                        <td class="p-2 border">$${Math.round(s.totalHireFire).toLocaleString()}</td>
+                        <td class="p-2 border">$${Math.round(s.totalHold).toLocaleString()}</td>
+                        <td class="p-2 border">$${Math.round(s.totalOther).toLocaleString()}</td>
+                        <td class="p-2 border font-bold text-brand-700 bg-brand-50/50">$${Math.round(s.totalCost).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            showPAPDetail('persecucion');
+        }
+
+        function showPAPDetail(stratKey) {
+            document.querySelectorAll('.pap-detail-tab').forEach(btn => {
+                btn.classList.remove('border-brand-600', 'text-brand-600');
+                btn.classList.add('border-transparent', 'text-slate-500');
+            });
+            document.getElementById(`btn-pap-${stratKey}`).classList.add('border-brand-600', 'text-brand-600');
+
+            const strat = papCalculatedResults[stratKey];
+            const container = document.getElementById('pap-detail-content');
+
+            let html = `
+                <table class="w-full text-xs text-center border">
+                    <thead class="bg-slate-100 text-slate-700">
+                        <tr>
+                            <th class="p-2 border">Mes</th>
+                            <th class="p-2 border">Demanda Real</th>
+                            <th class="p-2 border">Stock Seg.</th>
+                            <th class="p-2 border">Días</th>
+                            <th class="p-2 border">Operarios</th>
+                            <th class="p-2 border">Contratados / Despedidos</th>
+                            <th class="p-2 border">Producción (Kg)</th>
+                            <th class="p-2 border">Inv. Final (Kg)</th>
+                            <th class="p-2 border">Costo M.O.</th>
+                            <th class="p-2 border">Costo Inv.</th>
+                            <th class="p-2 border">Costo Extra/Sub/Falt</th>
+                            <th class="p-2 border font-bold bg-slate-200">Costo Mes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            strat.rows.forEach(r => {
+                html += `
+                    <tr>
+                        <td class="p-1.5 border font-semibold">Mes ${r.mes}</td>
+                        <td class="p-1.5 border">${r.demand.toLocaleString()}</td>
+                        <td class="p-1.5 border text-amber-700 font-medium">${Math.round(r.ss)}</td>
+                        <td class="p-1.5 border">${r.days}</td>
+                        <td class="p-1.5 border font-bold">${r.workers}</td>
+                        <td class="p-1.5 border text-slate-500">+${r.hired} / -${r.fired}</td>
+                        <td class="p-1.5 border font-semibold text-brand-700">${r.prod.toLocaleString()}</td>
+                        <td class="p-1.5 border ${r.finalInv < 0 ? 'text-red-600 font-bold' : ''}">${r.finalInv.toLocaleString()}</td>
+                        <td class="p-1.5 border">$${Math.round(r.costMO).toLocaleString()}</td>
+                        <td class="p-1.5 border">$${Math.round(r.costHold).toLocaleString()}</td>
+                        <td class="p-1.5 border">$${Math.round(r.costOther).toLocaleString()}</td>
+                        <td class="p-1.5 border font-bold bg-slate-50">$${Math.round(r.total).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // PESTAÑA 3: PROGRAMA MAESTRO DE PRODUCCIÓN (MPS)
+        // ==========================================
+        function renderProductMixList() {
+            const container = document.getElementById('product-mix-list');
+            container.innerHTML = '';
+            
+            let totalShare = 0;
+            productMix.forEach((p, idx) => {
+                totalShare += p.share;
+                container.innerHTML += `
+                    <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-slate-800 text-xs">${p.name}</span>
+                            <button onclick="removeProduct(${p.id})" class="text-red-500 hover:text-red-700 text-xs" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[11px]">
+                            <div>
+                                <label class="text-slate-500 block">Participación %:</label>
+                                <input type="number" value="${p.share}" onchange="updateProduct(${idx}, 'share', this.value)" class="w-full p-1 border rounded text-center font-semibold">
+                            </div>
+                            <div>
+                                <label class="text-slate-500 block">Lote Fijo (Kg):</label>
+                                <input type="number" value="${p.lotSize}" onchange="updateProduct(${idx}, 'lotSize', this.value)" class="w-full p-1 border rounded text-center">
+                            </div>
+                            <div>
+                                <label class="text-slate-500 block">Inv. Inicial:</label>
+                                <input type="number" value="${p.initialInv}" onchange="updateProduct(${idx}, 'initialInv', this.value)" class="w-full p-1 border rounded text-center">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const badge = document.getElementById('mix-total-badge');
+            badge.innerText = `Total: ${totalShare}%`;
+            if (totalShare === 100) {
+                badge.className = "text-xs px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800";
+            } else {
+                badge.className = "text-xs px-2 py-0.5 rounded font-bold bg-red-100 text-red-800";
+            }
+        }
+
+        function updateProduct(idx, field, value) {
+            productMix[idx][field] = parseFloat(value) || 0;
+            renderProductMixList();
+            calculateMPS();
+        }
+
+        function addProduct() {
+            const name = document.getElementById('new-prod-name').value.trim();
+            const share = parseFloat(document.getElementById('new-prod-mix').value) || 0;
+
+            if(!name || share <= 0) {
+                alert("Ingrese un nombre de producto y una participación válida mayores a 0.");
+                return;
+            }
+
+            const newId = Date.now();
+            productMix.push({ id: newId, name, share, lotSize: 1000, initialInv: 500 });
+            
+            document.getElementById('new-prod-name').value = '';
+            document.getElementById('new-prod-mix').value = '';
+
+            renderProductMixList();
+            calculateMPS();
+        }
+
+        function removeProduct(id) {
+            if(productMix.length <= 1) {
+                alert("Debe mantenerse al menos un producto lácteo.");
+                return;
+            }
+            productMix = productMix.filter(p => p.id !== id);
+            renderProductMixList();
+            calculateMPS();
+        }
+
+        // Almacenamiento de pedidos confirmados dinámicos por cliente
+        let customerOrdersStore = {};
+
+        function calculateMPS() {
+            const totalBaseDemand = parseFloat(document.getElementById('mps-base-demand').value) || 15000;
+            const weeks = parseInt(document.getElementById('mps-horizon').value) || 4;
+            const container = document.getElementById('mps-tables-container');
+            container.innerHTML = '';
+
+            productMix.forEach(prod => {
+                // Generar Pedidos Confirmados por defecto si no existen
+                if (!customerOrdersStore[prod.id] || customerOrdersStore[prod.id].length !== weeks) {
+                    customerOrdersStore[prod.id] = Array(weeks).fill(0).map((_, i) => Math.round((totalBaseDemand * (prod.share / 100) / weeks) * (0.8 + Math.random() * 0.3)));
+                }
+
+                const weeklyDemand = Math.round((totalBaseDemand * (prod.share / 100)) / weeks);
+                const orders = customerOrdersStore[prod.id];
+
+                // Arrays para MPS
+                let invInicial = Array(weeks).fill(0);
+                let forecastArr = Array(weeks).fill(weeklyDemand);
+                let invFinal = Array(weeks).fill(0);
+                let mpsArr = Array(weeks).fill(0);
+                let atpArr = Array(weeks).fill(0);
+
+                let currentInv = prod.initialInv;
+
+                for (let w = 0; w < weeks; w++) {
+                    invInicial[w] = currentInv;
+                    const maxReq = Math.max(forecastArr[w], orders[w]);
+
+                    // Si el inventario inicial no cubre el requerimiento mayor, se activa lote MPS
+                    if (invInicial[w] < maxReq) {
+                        const needed = maxReq - invInicial[w];
+                        const lotes = Math.ceil(needed / prod.lotSize);
+                        mpsArr[w] = lotes * prod.lotSize;
+                    } else {
+                        mpsArr[w] = 0;
+                    }
+
+                    invFinal[w] = invInicial[w] + mpsArr[w] - maxReq;
+                    currentInv = invFinal[w];
+                }
+
+                // Cálculo de ATP (Available to Promise)
+                for (let w = 0; w < weeks; w++) {
+                    if (w === 0 || mpsArr[w] > 0) {
+                        let sumOrdersUntilNextMPS = orders[w];
+                        for (let k = w + 1; k < weeks; k++) {
+                            if (mpsArr[k] > 0) break;
+                            sumOrdersUntilNextMPS += orders[k];
+                        }
+                        atpArr[w] = (invInicial[w] + mpsArr[w]) - sumOrdersUntilNextMPS;
+                    } else {
+                        atpArr[w] = 0; // No hay nuevo lote
+                    }
+                }
+
+                // Construcción de UI para este Producto
+                let tableHtml = `
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 gap-2">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-box text-brand-600"></i> ${prod.name}
+                                    <span class="text-xs font-normal text-slate-500">(${prod.share}% de Participación)</span>
+                                </h4>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-slate-600">
+                                <span>Lote de Producción: <strong>${prod.lotSize} Kg</strong></span> | 
+                                <span>Inv. Inicial: <strong>${prod.initialInv} Kg</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-center border">
+                                <thead class="bg-slate-100 text-slate-700">
+                                    <tr>
+                                        <th class="p-2 border text-left min-w-[180px]">Concepto / Semana</th>
+                                        ${Array.from({length: weeks}, (_, i) => `<th class="p-2 border">Semana ${i+1}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="p-2 border text-left font-medium bg-slate-50">Inventario Inicial (Kg)</td>
+                                        ${invInicial.map(v => `<td class="p-2 border">${v}</td>`).join('')}
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border text-left font-medium bg-slate-50">Pronóstico de Demanda</td>
+                                        ${forecastArr.map(v => `<td class="p-2 border text-slate-600">${v}</td>`).join('')}
+                                    </tr>
+                                    <tr class="bg-blue-50/50">
+                                        <td class="p-2 border text-left font-semibold text-brand-800">Pedidos Confirmados</td>
+                                        ${orders.map((v, i) => `
+                                            <td class="p-1 border">
+                                                <input type="number" value="${v}" onchange="updateCustomerOrder(${prod.id}, ${i}, this.value)" class="w-full text-center p-1 border rounded focus:ring-1 focus:ring-brand-500 font-semibold text-brand-900">
+                                            </td>
+                                        `).join('')}
+                                    </tr>
+                                    <tr class="bg-emerald-50/60 font-bold">
+                                        <td class="p-2 border text-left text-emerald-800">MPS (Plan Maestro Producción)</td>
+                                        ${mpsArr.map(v => `<td class="p-2 border text-emerald-700 ${v > 0 ? 'bg-emerald-100' : ''}">${v > 0 ? v : '-'}</td>`).join('')}
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border text-left font-medium bg-slate-50">Inventario Final Proyectado</td>
+                                        ${invFinal.map(v => `<td class="p-2 border ${v < 0 ? 'text-red-600 font-bold' : ''}">${v}</td>`).join('')}
+                                    </tr>
+                                    <tr class="bg-amber-50/60 font-bold">
+                                        <td class="p-2 border text-left text-amber-800">ATP (Disponible para Promesa)</td>
+                                        ${atpArr.map((v, idx) => `<td class="p-2 border text-amber-700">${(idx === 0 || mpsArr[idx] > 0) ? v : '-'}</td>`).join('')}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += tableHtml;
+            });
+        }
+
+        function updateCustomerOrder(prodId, weekIdx, val) {
+            customerOrdersStore[prodId][weekIdx] = parseFloat(val) || 0;
+            calculateMPS();
+        }
+    </script>
+</body>
+</html>
